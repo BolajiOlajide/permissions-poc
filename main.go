@@ -92,14 +92,14 @@ while the operator role will give full access to batch changes`)
 					}
 				}
 
-				if p.Namespace == "CODEINSIGHTS" && p.Action == "VIEW" {
+				if p.Namespace == "CODEINSIGHTS" && p.Action == "READ" {
 					err := c.addPermissionToRole(r, p)
 					if err != nil {
 						return err
 					}
 				}
 
-				if p.Namespace == "BATCHCHANGES" && p.Action == "VIEW" {
+				if p.Namespace == "BATCHCHANGES" && p.Action == "READ" {
 					err := c.addPermissionToRole(r, p)
 					if err != nil {
 						return err

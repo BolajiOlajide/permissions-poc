@@ -79,15 +79,7 @@ CREATE TABLE code_insights (
 CREATE TABLE permissions (
     id SERIAL PRIMARY KEY,
     namespace text NOT NULL,
-    namespace_object_id INTEGER, -- NULL
     action TEXT NOT NULL,
-
-    -- foreign keys
-    namespace_user_id integer REFERENCES users(id) ON DELETE CASCADE DEFERRABLE,
-
-    -- constraints
-    -- CONSTRAINT permission_global_check CHECK ((namespace_object_id IS NULL) = ((namespace_user_id IS NULL) = (namespace_org_id IS NULL))),
-    CONSTRAINT permission_global_check CHECK ((namespace_object_id IS NULL) = (namespace_user_id IS NULL)),
     CONSTRAINT namespace_not_blank CHECK ((namespace <> ''::text))
 );
 
@@ -96,6 +88,27 @@ CREATE TABLE role_permissions (
     -- foreign keys
     permission_id integer,
     role_id integer
+);
+
+CREATE TABLE batch_changes_namespace (
+    id SERIAL PRIMARY KEY,
+    resource_id integer NOT NULL REFERENCES batch_changes(id) ON DELETE CASCADE DEFERRABLE,
+    subject_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFERRABLE,
+    action VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE notebooks_namespace (
+    id SERIAL PRIMARY KEY,
+    resource_id integer NOT NULL REFERENCES notebooks(id) ON DELETE CASCADE DEFERRABLE,
+    subject_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFERRABLE,
+    action VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE code_insights_namespace (
+    id SERIAL PRIMARY KEY,
+    resource_id integer NOT NULL REFERENCES code_insights(id) ON DELETE CASCADE DEFERRABLE,
+    subject_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE DEFERRABLE,
+    action VARCHAR(255) NOT NULL
 );
 
 ALTER TABLE ONLY batch_changes

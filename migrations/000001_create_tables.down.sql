@@ -1,3 +1,8 @@
+-- remove namespaces here
+DROP TABLE IF EXISTS batch_changes_namespace;
+DROP TABLE IF EXISTS notebooks_namespace;
+DROP TABLE IF EXISTS code_insights_namespace;
+
 -- Add tables with exactly one foreign keys here
 DROP TABLE IF EXISTS batch_changes;
 DROP TABLE IF EXISTS notebooks;

@@ -15,7 +15,7 @@ type batchChange struct {
 
 func (b *batchChange) shareResourceAccess(recipientUserID int, action string) error {
 	var pint int
-	err := db.QueryRow("INSERT INTO permissions (namespace, namespace_object_id, namespace_user_id, action) VALUES ('BATCHCHANGES', $1, $2, $3) RETURNING id", b.ID, recipientUserID, action).Scan(&pint)
+	err := db.QueryRow("INSERT INTO batch_changes_namespace (resource_id, user_id, action) VALUES ($1, $2, $3) RETURNING id", b.ID, recipientUserID, action).Scan(&pint)
 
 	return err
 }
@@ -35,7 +35,7 @@ type notebook struct {
 
 func (n *notebook) shareResourceAccess(recipientUserID int, action string) error {
 	var pint int
-	err := db.QueryRow("INSERT INTO permissions (namespace, namespace_object_id, namespace_user_id, action) VALUES ('BATCHCHANGES', $1, $2, $3) RETURNING id", n.ID, recipientUserID, action).Scan(&pint)
+	err := db.QueryRow("INSERT INTO notebooks_namespace (resource_id, user_id, action) VALUES ($1, $2, $3) RETURNING id", n.ID, recipientUserID, action).Scan(&pint)
 
 	return err
 }
@@ -48,7 +48,7 @@ type codeinsight struct {
 
 func (c *codeinsight) shareResourceAccess(recipientUserID int, action string) error {
 	var pint int
-	err := db.QueryRow("INSERT INTO permissions (namespace, namespace_object_id, namespace_user_id, action) VALUES ('BATCHCHANGES', $1, $2, $3) RETURNING id", c.ID, recipientUserID, action).Scan(&pint)
+	err := db.QueryRow("INSERT INTO code_insights_namespace (resource_id, user_id, action) VALUES ($1, $2, $3) RETURNING id", c.ID, recipientUserID, action).Scan(&pint)
 
 	return err
 }

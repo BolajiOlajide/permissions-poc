@@ -50,7 +50,7 @@ where
         AND
     p.namespace_object_id IS NULL
         AND
-    p.relation = 'CREATE'
+    p.relation = 'WRITE'
 inner join on user where id = 4
 inner join on user_roles where user_id = user.id | 4
 inner join on role_permissions where rp.role_id = ur.id

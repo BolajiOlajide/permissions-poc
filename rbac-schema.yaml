@@ -4,21 +4,21 @@ namespaces:
   - batch_changes:
     name: "BATCHCHANGES"
     actions:
-      - VIEW
-      - CREATE
+      - READ
+      - WRITE
       - EXECUTE
 
   - notebooks:
     name: "NOTEBOOKS"
     actions:
-      - VIEW
-      - CREATE
+      - READ
+      - WRITE
 
   - codeinsights:
     name: "CODEINSIGHTS"
     actions:
-      - VIEW
-      - CREATE
+      - READ
+      - WRITE
 
   # - orgs:
   #   name: "ORG"

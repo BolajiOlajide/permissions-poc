@@ -27,7 +27,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 func getBatchChangesHandler(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(userKey).(*User)
 
-	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "VIEW")
+	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "READ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
@@ -38,7 +38,16 @@ func getBatchChangesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query("SELECT id, name, private, namespace_org_id, namespace_user_id, creator_id FROM batch_changes WHERE (namespace_user_id = $1) OR (namespace_user_id <> $1 AND private = false) OR (id IN (SELECT namespace_object_id FROM permissions p WHERE p.namespace = 'BATCHCHANGES' AND p.action = 'VIEW' AND p.namespace_user_id = $1)) OR (EXISTS (SELECT 1 FROM org_members WHERE org_id = batch_changes.namespace_org_id AND user_id = $1 AND org_id <> 0))", user.ID)
+	rows, err := db.Query(`SELECT
+	id, name, private, namespace_org_id, namespace_user_id, creator_id
+FROM
+	batch_changes bc
+WHERE
+	(bc.namespace_user_id = $1) OR
+	(bc.namespace_user_id <> $1 AND bc.private = false) OR
+	(bc.private = true AND EXISTS(SELECT 1 FROM batch_changes_namespace bcn WHERE bcn.action = 'WRITE' AND bcn.subject_id = $1 AND bcn.resource_id = bc.id)) OR
+	(bc.namespace_org_id IS NOT NULL AND EXISTS (SELECT 1 FROM org_members om WHERE om.org_id = bc.namespace_org_id AND om.user_id = $1))
+`, user.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -64,7 +73,7 @@ func getBatchChangesHandler(w http.ResponseWriter, r *http.Request) {
 func shareBatchChange(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(userKey).(*User)
 
-	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "VIEW")
+	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "WRITE")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
@@ -85,14 +94,22 @@ func shareBatchChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// feeling lazy to convert rUID to an int for proper comparison
 	if user.ID == recipientUserID {
 		http.Error(w, "You cannot share a batch change with yourself", http.StatusBadRequest)
 		return
 	}
 
 	bc := &batchChange{}
-	err = db.QueryRow("SELECT id FROM batch_changes WHERE namespace_user_id = $1 AND id = $2 AND private = true", user.ID, bcID).Scan(&bc.ID)
+	err = db.QueryRow(`SELECT
+	id, private
+FROM
+	batch_changes bc
+WHERE id = $2 AND (
+	(bc.namespace_user_id = $1) OR
+	(bc.namespace_org_id IS NOT NULL AND EXISTS (SELECT 1 FROM org_members om WHERE om.org_id = bc.namespace_org_id AND om.user_id = $1)) OR
+	(EXISTS (SELECT 1 FROM batch_changes_namespace bcn WHERE bcn.resource_id = bc.id AND bcn.subject_id = $1 AND bcn.action = 'WRITE'))
+)
+`, user.ID, bcID).Scan(&bc.ID, &bc.Private)
 
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -100,6 +117,11 @@ func shareBatchChange(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, fmt.Sprintf("Sharing batch change %s was unsuccessful.", bcID), http.StatusBadRequest)
+		return
+	}
+
+	if !bc.Private {
+		http.Error(w, fmt.Sprintf("Batch Change with ID %s is public.", bcID), http.StatusBadRequest)
 		return
 	}
 
@@ -115,7 +137,7 @@ func shareBatchChange(w http.ResponseWriter, r *http.Request) {
 func createBatchChange(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(userKey).(*User)
 
-	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "CREATE")
+	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "WRITE")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
@@ -151,7 +173,7 @@ func createBatchChange(w http.ResponseWriter, r *http.Request) {
 func getBatchChange(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(userKey).(*User)
 
-	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "VIEW")
+	isAuthorized, err := user.checkNamespaceAccess("BATCHCHANGES", "READ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
 		return
@@ -174,7 +196,7 @@ WHERE
 	bc.id = $1 AND (
 		(bc.namespace_user_id = $2) OR
 		(bc.namespace_user_id <> $2 AND bc.private = false) OR
-		EXISTS(SELECT 1 FROM permissions p WHERE p.namespace = 'BATCHCHANGES' AND p.action = 'VIEW' AND p.namespace_user_id = $2 AND p.namespace_object_id = bc.id) OR
+		EXISTS(SELECT 1 FROM batch_changes_namespace bcn WHERE bcn.resource_id = bc.id AND bcn.subject_id = $2 AND bcn.action = 'READ') OR
 		(bc.namespace_org_id IS NOT NULL AND EXISTS(SELECT 1  FROM org_members WHERE org_id = bc.namespace_org_id AND user_id = $2))
 	)
 `, bcID, user.ID).Scan(&bc.ID, &bc.Name, &bc.Private, &NullInt{N: &bc.NamespaceOrgID}, &NullInt{N: &bc.NamespaceUserID}, &bc.CreatorID)
