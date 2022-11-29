@@ -19,9 +19,3 @@ namespaces:
     actions:
       - READ
       - WRITE
-
-  # - orgs:
-  #   name: "ORG"
-  #   actions:
-  #     - MEMBER
-  #     - ADMIN
