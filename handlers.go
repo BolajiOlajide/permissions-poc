@@ -45,7 +45,7 @@ FROM
 WHERE
 	(bc.namespace_user_id = $1) OR
 	(bc.namespace_user_id <> $1 AND bc.private = false) OR
-	(bc.private = true AND EXISTS(SELECT 1 FROM batch_changes_namespace bcn WHERE bcn.action = 'WRITE' AND bcn.subject_id = $1 AND bcn.resource_id = bc.id)) OR
+	(bc.private = true AND EXISTS(SELECT 1 FROM batch_changes_namespace bcn WHERE bcn.action = 'VIEW' AND bcn.subject_id = $1 AND bcn.resource_id = bc.id)) OR
 	(bc.namespace_org_id IS NOT NULL AND EXISTS (SELECT 1 FROM org_members om WHERE om.org_id = bc.namespace_org_id AND om.user_id = $1))
 `, user.ID)
 	if err != nil {
@@ -127,7 +127,7 @@ WHERE id = $2 AND (
 
 	err = bc.shareResourceAccess(recipientUserID, strings.ToUpper(action))
 	if err != nil {
-		http.Error(w, "unable ", http.StatusBadRequest)
+		http.Error(w, "unable "+err.Error(), http.StatusBadRequest)
 		return
 	}
 

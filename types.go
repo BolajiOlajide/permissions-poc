@@ -15,7 +15,7 @@ type batchChange struct {
 
 func (b *batchChange) shareResourceAccess(recipientUserID int, action string) error {
 	var pint int
-	err := db.QueryRow("INSERT INTO batch_changes_namespace (resource_id, user_id, action) VALUES ($1, $2, $3) RETURNING id", b.ID, recipientUserID, action).Scan(&pint)
+	err := db.QueryRow("INSERT INTO batch_changes_namespace (resource_id, subject_id, action) VALUES ($1, $2, $3) RETURNING id", b.ID, recipientUserID, action).Scan(&pint)
 
 	return err
 }
